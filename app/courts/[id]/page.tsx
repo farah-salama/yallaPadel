@@ -16,7 +16,7 @@ export default async function CourtSlotsPage({
   const { id } = await params;
   const q = await searchParams;
   const user = await getSession();
-  const court = db.getCourt(id);
+  const court = await db.getCourt(id);
   if (!court) notFound();
 
   const today = startOfCairoDay();
@@ -24,7 +24,7 @@ export default async function CourtSlotsPage({
   const selected = q.d
     ? cairoDate(Number(q.d.slice(0, 4)), Number(q.d.slice(5, 7)), Number(q.d.slice(8, 10)))
     : today;
-  const slots = db.slotsFor(court.id, selected);
+  const slots = await db.slotsFor(court.id, selected);
   const key = (d: Date) => {
     const p = cairoParts(d);
     return `${p.year}-${p.month}-${p.day}`;
@@ -58,11 +58,9 @@ export default async function CourtSlotsPage({
           <SlotTimeline
             slots={slots}
             courtId={court.id}
-            prices={{
-              peak: court.peakPriceCents,
-              offPeak: court.offPeakPriceCents,
-              offPeakEnd: court.offPeakEnd,
-            }}
+            canWaitlist={Boolean(user)}
+            waitlistedIds={user ? await db.waitlistedSlotIds(user.id) : []}
+            back={`/courts/${court.slug}?d=${key(selected)}`}
           />
         </div>
       </div>

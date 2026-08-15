@@ -15,6 +15,9 @@ export type PaymentStatus =
   | "VOIDED"
   | "PROCESSING";
 export type RefundStatus = "NONE" | "PROCESSING" | "REFUNDED" | "FAILED";
+export type FriendStatus = "PENDING" | "ACCEPTED";
+export type RequestStatus = "PENDING" | "ACCEPTED" | "DECLINED";
+export type PromoKind = "MORNING" | "FLASH";
 
 export type Profile = {
   id: string;
@@ -24,6 +27,9 @@ export type Profile = {
   role: Role;
   createdAt: Date;
   password?: string;
+  points: number;
+  referralCode: string;
+  referredById: string | null;
 };
 
 export type Court = {
@@ -51,6 +57,11 @@ export type TimeSlot = {
   holdExpiresAt: Date | null;
 };
 
+export type SlotView = TimeSlot & {
+  priceCents: number;
+  flash: boolean;
+};
+
 export type Booking = {
   id: string;
   code: string;
@@ -61,12 +72,14 @@ export type Booking = {
   depositCents: number;
   remainingCents: number;
   totalCents: number;
+  loyaltyRedeemCents: number;
   playerNames: string[];
   qrToken: string;
   redeemedAt: Date | null;
   cancelledAt: Date | null;
   refundStatus: RefundStatus;
   refundCents: number;
+  openToJoin: boolean;
   createdAt: Date;
 };
 
@@ -82,6 +95,61 @@ export type Payment = {
   clientSecret: string | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type Friendship = {
+  id: string;
+  fromId: string;
+  toId: string;
+  status: FriendStatus;
+};
+
+export type JoinRequest = {
+  id: string;
+  bookingId: string;
+  userId: string;
+  status: RequestStatus;
+  createdAt: Date;
+};
+
+export type WaitlistEntry = {
+  id: string;
+  slotId: string;
+  userId: string;
+  createdAt: Date;
+  notifiedAt: Date | null;
+  emailedAt?: Date | null;
+};
+
+export type Promotion = {
+  id: string;
+  kind: PromoKind;
+  percentOff: number;
+  active: boolean;
+  hourStart: number | null;
+  hourEnd: number | null;
+  slotId: string | null;
+  endsAt: Date | null;
+  usageCount: number;
+};
+
+export type LoyaltyEvent = {
+  id: string;
+  userId: string;
+  delta: number;
+  reason: string;
+  bookingId: string | null;
+  createdAt: Date;
+};
+
+export type WaitlistNotice = {
+  userId: string;
+  email: string;
+  name: string;
+  slotId: string;
+  courtName: string;
+  start: Date;
+  flashPercent: number | null;
 };
 
 export type BookingView = Booking & {

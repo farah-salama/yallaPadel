@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import type { BookingView } from "./types";
+import type { BookingView, WaitlistNotice } from "./types";
 import { formatDate, formatMoney, formatTime } from "./utils";
 
 function client() {
@@ -52,4 +52,39 @@ export async function sendCancelEmail(booking: BookingView) {
   if (admin) {
     await resend.emails.send({ from, to: admin, subject: `Refund ${booking.code}`, html: body });
   }
+}
+
+export async function sendWaitlistEmail(notice: WaitlistNotice) {
+  const resend = client();
+  const flash = notice.flashPercent ? ` Flash: ${notice.flashPercent}% off for 15 minutes.` : "";
+  if (!resend) {
+    console.info("[mail] waitlist", notice.email, notice.courtName, notice.slotId, flash);
+    return;
+  }
+  await resend.emails.send({
+    from,
+    to: notice.email,
+    subject: `COURT OPEN — ${notice.courtName} ${formatTime(notice.start)}`,
+    html: `
+      <div style="background:#080B09;color:#F4F7F2;font-family:sans-serif;padding:32px">
+        <p style="letter-spacing:.3em;color:#C8FF00;font-size:12px">YALLAPADEL</p>
+        <h1>THE COURT IS WAITING.</h1>
+        <p>${notice.courtName} at ${formatTime(notice.start)} just opened.${flash}</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendJoinEmail(to: string, guestName: string, court: string) {
+  const resend = client();
+  if (!resend) {
+    console.info("[mail] join", to, guestName, court);
+    return;
+  }
+  await resend.emails.send({
+    from,
+    to,
+    subject: `${guestName} wants to join your court`,
+    html: `<p>${guestName} requested to join your game on ${court}.</p>`,
+  });
 }

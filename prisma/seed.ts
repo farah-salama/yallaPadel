@@ -1,29 +1,9 @@
 import { PrismaClient, Role, SlotStatus } from "@prisma/client";
+import { addDays, cairoDate, cairoParts, parseHm, startOfCairoDay } from "../lib/utils";
 
 const prisma = new PrismaClient();
 
-function cairoDate(year: number, month: number, day: number, hour = 0, minute = 0) {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Africa/Cairo",
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  let t = Date.UTC(year, month - 1, day, hour, minute, 0);
-  for (let i = 0; i < 4; i++) {
-    const parts: Record<string, string> = {};
-    for (const p of fmt.formatToParts(new Date(t))) {
-      if (p.type !== "literal") parts[p.type] = p.value;
-    }
-    const got = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour) % 24, Number(parts.minute));
-    const want = Date.UTC(year, month - 1, day, hour, minute);
-    t += want - got;
-  }
-  return new Date(t);
-}
+const DEMO_PASSWORD = "padel123";
 
 async function main() {
   await prisma.clubSettings.upsert({
@@ -32,24 +12,103 @@ async function main() {
     create: { id: "default", name: "YallaPadel", location: "Sheikh Zayed, Cairo" },
   });
 
-  const mostafaId = process.env.SEED_MOSTAFA_ID || "00000000-0000-0000-0000-000000000001";
-  const omarId = process.env.SEED_OMAR_ID || "00000000-0000-0000-0000-000000000002";
-
-  await prisma.profile.upsert({
+  const mostafa = await prisma.profile.upsert({
     where: { email: "mostafa@yallapadel.club" },
-    update: { role: Role.ADMIN },
-    create: { id: mostafaId, email: "mostafa@yallapadel.club", name: "Mostafa", phone: "+201001112233", role: Role.ADMIN },
+    update: { role: Role.ADMIN, password: DEMO_PASSWORD },
+    create: {
+      id: "user-mostafa",
+      email: "mostafa@yallapadel.club",
+      name: "Mostafa",
+      phone: "+201001112233",
+      role: Role.ADMIN,
+      password: DEMO_PASSWORD,
+      referralCode: "YALLA-MOST",
+    },
+  });
+  const omar = await prisma.profile.upsert({
+    where: { email: "omar@yallapadel.club" },
+    update: { password: DEMO_PASSWORD },
+    create: {
+      id: "user-omar",
+      email: "omar@yallapadel.club",
+      name: "Omar E.",
+      phone: "+201009998877",
+      role: Role.PLAYER,
+      password: DEMO_PASSWORD,
+      points: 400,
+      referralCode: "YALLA-OMAR",
+    },
+  });
+  const lina = await prisma.profile.upsert({
+    where: { email: "lina@yallapadel.club" },
+    update: { password: DEMO_PASSWORD },
+    create: {
+      id: "user-lina",
+      email: "lina@yallapadel.club",
+      name: "Lina K.",
+      phone: "+201005554433",
+      role: Role.PLAYER,
+      password: DEMO_PASSWORD,
+      points: 220,
+      referralCode: "YALLA-LINA",
+      referredById: omar.id,
+    },
   });
   await prisma.profile.upsert({
-    where: { email: "omar@yallapadel.club" },
+    where: { email: "nabil@yallapadel.club" },
+    update: { password: DEMO_PASSWORD },
+    create: {
+      id: "user-nabil",
+      email: "nabil@yallapadel.club",
+      name: "Nabil S.",
+      phone: "+201002223344",
+      role: Role.PLAYER,
+      password: DEMO_PASSWORD,
+      points: 80,
+      referralCode: "YALLA-NABL",
+    },
+  });
+  await prisma.profile.upsert({
+    where: { email: "yasmin@yallapadel.club" },
+    update: { password: DEMO_PASSWORD },
+    create: {
+      id: "user-yasmin",
+      email: "yasmin@yallapadel.club",
+      name: "Yasmin A.",
+      phone: "+201003334455",
+      role: Role.PLAYER,
+      password: DEMO_PASSWORD,
+      points: 50,
+      referralCode: "YALLA-YASM",
+    },
+  });
+  void mostafa;
+  void lina;
+
+  await prisma.friendship.upsert({
+    where: { fromId_toId: { fromId: omar.id, toId: lina.id } },
+    update: { status: "ACCEPTED" },
+    create: { fromId: omar.id, toId: lina.id, status: "ACCEPTED" },
+  });
+
+  await prisma.promotion.upsert({
+    where: { id: "promo-morning" },
     update: {},
-    create: { id: omarId, email: "omar@yallapadel.club", name: "Omar E.", phone: "+201009998877", role: Role.PLAYER },
+    create: {
+      id: "promo-morning",
+      kind: "MORNING",
+      percentOff: 30,
+      active: false,
+      hourStart: 8,
+      hourEnd: 12,
+    },
   });
 
   const c1 = await prisma.court.upsert({
     where: { slug: "court-01" },
     update: {},
     create: {
+      id: "court-01",
       slug: "court-01",
       name: "COURT 01",
       type: "Premium Glass Court",
@@ -63,6 +122,7 @@ async function main() {
     where: { slug: "court-02" },
     update: {},
     create: {
+      id: "court-02",
       slug: "court-02",
       name: "COURT 02",
       type: "Night Court",
@@ -73,32 +133,29 @@ async function main() {
     },
   });
 
-  const now = new Date();
-  const cairoNow = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
-  const y = Number(cairoNow.find((p) => p.type === "year")?.value);
-  const m = Number(cairoNow.find((p) => p.type === "month")?.value);
-  const d = Number(cairoNow.find((p) => p.type === "day")?.value);
-
   for (const court of [c1, c2]) {
-    for (let day = 0; day < 14; day++) {
-      const base = cairoDate(y, m, d + day, 0, 0);
-      const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(base);
-      const yy = Number(parts.find((p) => p.type === "year")?.value);
-      const mm = Number(parts.find((p) => p.type === "month")?.value);
-      const dd = Number(parts.find((p) => p.type === "day")?.value);
-      for (let h = 7; h < 23; h++) {
-        const start = cairoDate(yy, mm, dd, h, 0);
-        const end = cairoDate(yy, mm, dd, h + 1, 0);
-        await prisma.timeSlot.upsert({
-          where: { courtId_start: { courtId: court.id, start } },
-          update: {},
-          create: { courtId: court.id, start, end, status: SlotStatus.FREE },
+    for (let d = 0; d < 14; d++) {
+      const day = addDays(startOfCairoDay(), d);
+      const p = cairoParts(day);
+      const open = parseHm(court.openingTime);
+      const close = parseHm(court.closingTime);
+      const rows = [];
+      for (let h = open.h; h < close.h; h++) {
+        const start = cairoDate(Number(p.year), Number(p.month), Number(p.day), h, 0);
+        const end = cairoDate(Number(p.year), Number(p.month), Number(p.day), h + 1, 0);
+        rows.push({
+          id: `${court.id}-${p.year}${p.month}${p.day}-${String(h).padStart(2, "0")}`,
+          courtId: court.id,
+          start,
+          end,
+          status: SlotStatus.FREE,
         });
       }
+      if (rows.length) await prisma.timeSlot.createMany({ data: rows, skipDuplicates: true });
     }
   }
 
-  console.log("Seeded YallaPadel courts and 14-day slots.");
+  console.log("Seeded YallaPadel courts, players, and 14-day slots.");
 }
 
 main()

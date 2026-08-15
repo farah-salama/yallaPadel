@@ -1,6 +1,12 @@
 "use client";
 
-export function PlayerSlots({ names }: { names: string[] }) {
+export function PlayerSlots({
+  names,
+  friends = [],
+}: {
+  names: string[];
+  friends?: { name: string }[];
+}) {
   const slots = [0, 1, 2, 3].map((i) => names[i] || "");
   return (
     <div>
@@ -12,12 +18,20 @@ export function PlayerSlots({ names }: { names: string[] }) {
             <input
               name={`p${i + 1}`}
               defaultValue={name}
+              list={friends.length ? "friends-list" : undefined}
               placeholder="ADD PLAYER"
               className="mt-2 w-full bg-transparent font-display text-2xl outline-none placeholder:text-mute/40"
             />
           </label>
         ))}
       </div>
+      {friends.length ? (
+        <datalist id="friends-list">
+          {friends.map((f) => (
+            <option key={f.name} value={f.name} />
+          ))}
+        </datalist>
+      ) : null}
     </div>
   );
 }

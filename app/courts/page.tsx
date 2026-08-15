@@ -8,8 +8,15 @@ import { hourInCairo, formatMoney } from "@/lib/utils";
 
 export default async function CourtsPage() {
   const user = await getSession();
-  const courts = db.listCourts();
+  const courts = await db.listCourts();
   const today = new Date();
+  const cards = await Promise.all(
+    courts.map(async (court) => {
+      const slots = await db.slotsFor(court.id, today);
+      const eveningFree = slots.filter((s) => hourInCairo(s.start) >= 18 && s.status === "FREE").length;
+      return { court, eveningFree };
+    }),
+  );
   return (
     <div className="min-h-screen pb-20">
       <PlayerNav user={user} />
@@ -17,10 +24,7 @@ export default async function CourtsPage() {
         <p className="label">Sheikh Zayed</p>
         <h1 className="mt-3 font-display text-5xl sm:text-7xl">COURTS ARE OPEN.</h1>
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
-          {courts.map((court) => {
-            const slots = db.slotsFor(court.id, today);
-            const eveningFree = slots.filter((s) => hourInCairo(s.start) >= 18 && s.status === "FREE").length;
-            return (
+          {cards.map(({ court, eveningFree }) => (
               <article key={court.id} className="panel overflow-hidden">
                 <div className="bg-bg-2 p-6">
                   <CourtDiagram accent className="h-40" />
@@ -51,8 +55,7 @@ export default async function CourtsPage() {
                   </div>
                 </div>
               </article>
-            );
-          })}
+          ))}
         </div>
       </div>
     </div>

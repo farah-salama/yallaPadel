@@ -5,7 +5,7 @@ import { PlayerSlots } from "@/components/player-slots";
 import { StatusChip } from "@/components/status-chip";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { cancelBookingAction, savePlayersAction } from "@/lib/actions";
+import { cancelBookingAction, savePlayersAction, toggleOpenAction, answerJoinAction } from "@/lib/actions";
 import { bookingQrDataUrl } from "@/lib/qr";
 import { formatMoney, hoursUntil, refundPercent } from "@/lib/utils";
 
@@ -20,12 +20,14 @@ export default async function BookingDetailPage({
   const q = await searchParams;
   const user = await getSession();
   if (!user) redirect("/login");
-  const booking = db.getBooking(id);
+  const booking = await db.getBooking(id);
   if (!booking) notFound();
   if (booking.userId !== user.id && user.role !== "ADMIN") redirect("/bookings");
   const qr = await bookingQrDataUrl(booking.qrToken);
   const pct = refundPercent(booking.slot.start);
   const hours = hoursUntil(booking.slot.start);
+  const friends = await db.friendsOf(user.id);
+  const requests = booking.userId === user.id ? (await db.joinRequestsForHost(user.id)).filter((r) => r.bookingId === booking.id) : [];
 
   return (
     <div className="min-h-screen pb-24">
@@ -47,9 +49,40 @@ export default async function BookingDetailPage({
         {booking.status === "CONFIRMED" || booking.status === "CHECKED_IN" ? (
           <form action={savePlayersAction} className="mt-10">
             <input type="hidden" name="bookingId" value={booking.id} />
-            <PlayerSlots names={booking.playerNames} />
+            <PlayerSlots names={booking.playerNames} friends={friends} />
             <button className="mt-4 text-xs uppercase tracking-[0.2em] text-lime">Save players</button>
           </form>
+        ) : null}
+        {booking.status === "CONFIRMED" && booking.userId === user.id ? (
+          <form action={toggleOpenAction} className="panel mt-8 flex items-center justify-between p-4">
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <input type="hidden" name="open" value={booking.openToJoin ? "0" : "1"} />
+            <div>
+              <p className="label">Open to join</p>
+              <p className="text-sm text-mute">{booking.openToJoin ? "Others can request a seat." : "Keep this private."}</p>
+            </div>
+            <button className="text-xs uppercase tracking-[0.2em] text-lime">{booking.openToJoin ? "Close" : "Open"}</button>
+          </form>
+        ) : null}
+        {requests.length ? (
+          <div className="mt-8 space-y-3">
+            <p className="label">Join requests</p>
+            {requests.map((r) => (
+              <form key={r.id} action={answerJoinAction} className="panel flex items-center justify-between p-4">
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <span>{r.user.name}</span>
+                <div className="flex gap-3">
+                  <button name="accept" value="1" className="text-xs uppercase tracking-[0.2em] text-lime">
+                    Accept
+                  </button>
+                  <button name="accept" value="0" className="text-xs uppercase tracking-[0.2em] text-mute">
+                    Decline
+                  </button>
+                </div>
+              </form>
+            ))}
+          </div>
         ) : null}
         {booking.status === "CONFIRMED" ? (
           <form action={cancelBookingAction} className="mt-10">

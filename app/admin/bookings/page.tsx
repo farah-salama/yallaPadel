@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 
 export default async function AdminBookings() {
-  const list = db.allBookings();
+  const list = await db.allBookings();
   return (
     <div>
       <p className="label">Ops</p>

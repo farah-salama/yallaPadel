@@ -12,6 +12,8 @@ export function PlayerNav({ user }: { user: Profile | null }) {
         <nav className="hidden items-center gap-8 text-xs uppercase tracking-[0.22em] text-mute md:flex">
           <Link href="/">Home</Link>
           <Link href="/courts">Courts</Link>
+          <Link href="/join">Join</Link>
+          <Link href="/friends">Friends</Link>
           <Link href="/bookings">Bookings</Link>
           <Link href="/profile">Profile</Link>
         </nav>
@@ -37,6 +39,7 @@ export function PlayerNav({ user }: { user: Profile | null }) {
       <nav className="flex justify-around border-t border-white/[0.06] py-3 text-[10px] uppercase tracking-[0.2em] text-mute md:hidden">
         <Link href="/">Home</Link>
         <Link href="/courts">Courts</Link>
+        <Link href="/join">Join</Link>
         <Link href="/bookings">Bookings</Link>
         <Link href="/profile">Profile</Link>
       </nav>

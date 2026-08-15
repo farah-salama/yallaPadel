@@ -7,9 +7,9 @@ import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 
 export default async function AdminBookingEdit({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const booking = db.getBooking(id);
+  const booking = await db.getBooking(id);
   if (!booking) notFound();
-  const freeSlots = db.slotsFor(booking.courtId, booking.slot.start).filter((s) => s.status === "FREE" || s.id === booking.slotId);
+  const freeSlots = (await db.slotsFor(booking.courtId, booking.slot.start)).filter((s) => s.status === "FREE" || s.id === booking.slotId);
   return (
     <div className="max-w-xl">
       <p className="label">Edit</p>

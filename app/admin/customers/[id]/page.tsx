@@ -4,9 +4,9 @@ import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 
 export default async function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const person = db.getProfile(id);
+  const person = await db.getProfile(id);
   if (!person) notFound();
-  const list = db.bookingsForUser(id);
+  const list = await db.bookingsForUser(id);
   const spent = list
     .filter((b) => b.status === "CONFIRMED" || b.status === "CHECKED_IN")
     .reduce((s, b) => s + b.depositCents, 0);
@@ -19,9 +19,11 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat k="Matches" v={String(list.filter((b) => !["CANCELLED", "PENDING_PAYMENT"].includes(b.status)).length)} />
         <Stat k="Spent" v={formatMoney(spent)} />
+        <Stat k="Points" v={String(person.points)} />
         <Stat k="No-shows" v={String(noshow)} />
         <Stat k="Last played" v={last ? formatDate(last.slot.start) : "—"} />
       </div>
+      <p className="mt-4 font-mono text-sm text-mute">Referral {person.referralCode}</p>
       <p className="label mt-12">Recent bookings</p>
       <div className="mt-4 space-y-2">
         {list.slice(0, 8).map((b) => (

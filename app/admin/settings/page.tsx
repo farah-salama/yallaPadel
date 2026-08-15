@@ -12,7 +12,7 @@ export default async function SettingsPage() {
         <Row k="Deposit" v="50%" />
         <Row k="Hold" v="5 minutes" />
         <Row k="Cancel" v=">6h 100% · 2–6h 50% · <2h 0%" />
-        <Row k="Database" v={demo ? "Demo store (set DEMO_MODE=false + Supabase)" : "Supabase Postgres"} />
+        <Row k="Database" v={demo ? "Not connected — add DATABASE_URL + DIRECT_URL from Supabase" : "Supabase Postgres"} />
         <Row k="Paymob" v={paymobConfigured() ? "Configured" : "Demo checkout"} />
       </div>
     </div>

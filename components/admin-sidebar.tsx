@@ -7,6 +7,7 @@ const items = [
   ["Courts", "/admin/courts"],
   ["Customers", "/admin/customers"],
   ["Check-in", "/admin/check-in"],
+  ["Promotions", "/admin/promotions"],
   ["Settings", "/admin/settings"],
 ];
 

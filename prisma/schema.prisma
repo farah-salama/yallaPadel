@@ -49,87 +49,175 @@ enum RefundStatus {
   FAILED
 }
 
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum PromoKind {
+  MORNING
+  FLASH
+}
+
 model Profile {
-  id        String     @id
-  email     String     @unique
-  name      String
-  phone     String     @default("+201000000000")
-  role      Role       @default(PLAYER)
-  createdAt DateTime   @default(now())
-  bookings  Booking[]
-  payments  Payment[]
+  id           String          @id
+  email        String          @unique
+  name         String
+  phone        String          @default("+201000000000")
+  password     String?
+  role         Role            @default(PLAYER)
+  points       Int             @default(0)
+  referralCode String          @unique
+  referredById String?
+  createdAt    DateTime        @default(now())
+  bookings     Booking[]
+  payments     Payment[]
+  waitlist     WaitlistEntry[]
+  joinRequests JoinRequest[]
+  loyalty      LoyaltyEvent[]
+  friendsFrom  Friendship[]    @relation("FriendFrom")
+  friendsTo    Friendship[]    @relation("FriendTo")
 }
 
 model Court {
-  id                String       @id @default(cuid())
-  slug              String       @unique
+  id                String      @id @default(cuid())
+  slug              String      @unique
   name              String
   type              String
   location          String
-  description       String       @default("")
+  description       String      @default("")
   imageUrl          String?
   peakPriceCents    Int
   offPeakPriceCents Int
-  offPeakEnd        String       @default("12:00")
-  openingTime       String       @default("07:00")
-  closingTime       String       @default("23:00")
-  status            CourtStatus  @default(ACTIVE)
+  offPeakEnd        String      @default("12:00")
+  openingTime       String      @default("07:00")
+  closingTime       String      @default("23:00")
+  status            CourtStatus @default(ACTIVE)
   slots             TimeSlot[]
   bookings          Booking[]
 }
 
 model TimeSlot {
-  id            String     @id @default(cuid())
+  id            String          @id @default(cuid())
   courtId       String
-  court         Court      @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  court         Court           @relation(fields: [courtId], references: [id], onDelete: Cascade)
   start         DateTime
   end           DateTime
-  status        SlotStatus @default(FREE)
+  status        SlotStatus      @default(FREE)
   holdExpiresAt DateTime?
   booking       Booking?
-  createdAt     DateTime   @default(now())
+  waitlist      WaitlistEntry[]
+  createdAt     DateTime        @default(now())
 
   @@unique([courtId, start])
   @@index([start, status])
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  code          String        @unique
-  userId        String
-  user          Profile       @relation(fields: [userId], references: [id])
-  courtId       String
-  court         Court         @relation(fields: [courtId], references: [id])
-  slotId        String        @unique
-  slot          TimeSlot      @relation(fields: [slotId], references: [id])
-  status        BookingStatus @default(PENDING_PAYMENT)
-  depositCents  Int
-  remainingCents Int
-  totalCents    Int
-  playerNames   String[]
-  qrToken       String        @unique
-  redeemedAt    DateTime?
-  cancelledAt   DateTime?
-  refundStatus  RefundStatus  @default(NONE)
-  refundCents   Int           @default(0)
-  createdAt     DateTime      @default(now())
-  payments      Payment[]
+  id                 String        @id @default(cuid())
+  code               String        @unique
+  userId             String
+  user               Profile       @relation(fields: [userId], references: [id])
+  courtId            String
+  court              Court         @relation(fields: [courtId], references: [id])
+  slotId             String        @unique
+  slot               TimeSlot      @relation(fields: [slotId], references: [id])
+  status             BookingStatus @default(PENDING_PAYMENT)
+  depositCents       Int
+  remainingCents     Int
+  totalCents         Int
+  loyaltyRedeemCents Int           @default(0)
+  playerNames        String[]
+  qrToken            String        @unique
+  redeemedAt         DateTime?
+  cancelledAt        DateTime?
+  refundStatus       RefundStatus  @default(NONE)
+  refundCents        Int           @default(0)
+  openToJoin         Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  payments           Payment[]
+  joinRequests       JoinRequest[]
 }
 
 model Payment {
-  id                 String        @id @default(cuid())
-  bookingId          String
-  booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  userId             String
-  user               Profile       @relation(fields: [userId], references: [id])
-  provider           String        @default("paymob")
-  amountCents        Int
-  status             PaymentStatus @default(PENDING)
-  paymobTxnId        String?       @unique
-  paymobIntentionId  String?
-  clientSecret       String?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId            String
+  user              Profile       @relation(fields: [userId], references: [id])
+  provider          String        @default("paymob")
+  amountCents       Int
+  status            PaymentStatus @default(PENDING)
+  paymobTxnId       String?       @unique
+  paymobIntentionId String?
+  clientSecret      String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Friendship {
+  id        String       @id @default(cuid())
+  fromId    String
+  toId      String
+  from      Profile      @relation("FriendFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        Profile      @relation("FriendTo", fields: [toId], references: [id], onDelete: Cascade)
+  status    FriendStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  @@unique([fromId, toId])
+}
+
+model JoinRequest {
+  id        String        @id @default(cuid())
+  bookingId String
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Profile       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+
+  @@unique([bookingId, userId])
+}
+
+model WaitlistEntry {
+  id         String    @id @default(cuid())
+  slotId     String
+  slot       TimeSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  userId     String
+  user       Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime?
+  emailedAt  DateTime?
+
+  @@unique([slotId, userId])
+}
+
+model Promotion {
+  id         String    @id @default(cuid())
+  kind       PromoKind
+  percentOff Int
+  active     Boolean   @default(true)
+  hourStart  Int?
+  hourEnd    Int?
+  slotId     String?
+  endsAt     DateTime?
+  usageCount Int       @default(0)
+}
+
+model LoyaltyEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int
+  reason    String
+  bookingId String?
+  createdAt DateTime @default(now())
 }
 
 model ClubSettings {

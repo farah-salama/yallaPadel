@@ -4,14 +4,13 @@ import { PlayerNav } from "@/components/player-nav";
 import { HoldCountdown } from "@/components/hold-countdown";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { startCheckoutAction } from "@/lib/actions";
 import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 
 export default async function BookHoldPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getSession();
   if (!user) redirect("/login");
-  const booking = db.getBooking(id);
+  const booking = await db.getBooking(id);
   if (!booking) notFound();
   if (booking.userId !== user.id && user.role !== "ADMIN") redirect("/bookings");
   const slot = booking.slot;
@@ -37,12 +36,12 @@ export default async function BookHoldPage({ params }: { params: Promise<{ id: s
           </Link>
         )}
         {!expired ? (
-          <form action={startCheckoutAction} className="mt-10">
-            <input type="hidden" name="bookingId" value={booking.id} />
-            <button className="w-full rounded-full bg-lime py-4 text-sm font-medium uppercase tracking-[0.22em] text-bg shadow-glow">
-              Continue to payment · {formatMoney(booking.depositCents)}
-            </button>
-          </form>
+          <Link
+            href={`/pay/${booking.id}`}
+            className="mt-10 inline-block w-full rounded-full bg-lime py-4 text-sm font-medium uppercase tracking-[0.22em] text-bg shadow-glow"
+          >
+            Continue to payment · {formatMoney(booking.depositCents)}
+          </Link>
         ) : null}
       </div>
     </div>

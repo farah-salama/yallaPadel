@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { formatMoney, formatTime } from "@/lib/utils";
-import type { TimeSlot } from "@/lib/types";
+import type { SlotView } from "@/lib/types";
 import { StatusChip } from "./status-chip";
+import { joinWaitlistAction } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
 export function SlotTimeline({
   slots,
-  prices,
+  waitlistedIds = [],
+  canWaitlist = false,
+  back = "/courts",
 }: {
-  slots: TimeSlot[];
+  slots: SlotView[];
   courtId?: string;
-  prices: { peak: number; offPeak: number; offPeakEnd: string };
+  waitlistedIds?: string[];
+  canWaitlist?: boolean;
+  back?: string;
 }) {
   if (!slots.length) {
     return (
@@ -29,16 +34,15 @@ export function SlotTimeline({
       {slots.map((slot) => {
         const available = slot.status === "FREE";
         const held = slot.status === "HOLDING";
-        const hour = Number(formatTime(slot.start).slice(0, 2));
-        const offPeak = hour < 12;
-        const price = offPeak ? prices.offPeak : prices.peak;
+        const waiting = waitlistedIds.includes(slot.id);
         const inner = (
           <div
             className={cn(
-              "group flex items-center gap-5 rounded-2xl border px-5 py-4 transition",
+              "group flex items-center gap-4 rounded-2xl border px-5 py-4 transition",
               available && "border-lime/25 bg-lime/[0.04] hover:scale-[1.01] hover:border-lime/50 hover:shadow-glow-sm",
+              slot.flash && available && "shadow-glow",
               held && "border-warn/30 bg-warn/[0.06]",
-              slot.status === "RESERVED" && "border-white/[0.06] bg-white/[0.03] opacity-60",
+              slot.status === "RESERVED" && "border-white/[0.06] bg-white/[0.03]",
               slot.status === "MAINTENANCE" && "border-danger/20 bg-danger/[0.05] opacity-70",
             )}
           >
@@ -52,29 +56,49 @@ export function SlotTimeline({
                 slot.status === "MAINTENANCE" && "bg-danger/40",
               )}
             />
-            <div className="hidden w-28 sm:block">
+            <div className="hidden sm:block">
               <StatusChip
                 status={
-                  available
-                    ? "AVAILABLE"
-                    : held
-                      ? "HELD"
-                      : slot.status === "MAINTENANCE"
-                        ? "MAINTENANCE"
-                        : "BOOKED"
+                  slot.flash && available
+                    ? "FLASH"
+                    : available
+                      ? "AVAILABLE"
+                      : held
+                        ? "HELD"
+                        : slot.status === "MAINTENANCE"
+                          ? "MAINTENANCE"
+                          : "BOOKED"
                 }
               />
             </div>
             <div className="w-24 text-right font-mono text-sm text-mute">
-              {available ? formatMoney(price) : "—"}
+              {available ? formatMoney(slot.priceCents) : "—"}
             </div>
           </div>
         );
-        if (!available) return <div key={slot.id}>{inner}</div>;
+        if (available) {
+          return (
+            <Link key={slot.id} href={`/hold/${slot.id}`}>
+              {inner}
+            </Link>
+          );
+        }
         return (
-          <Link key={slot.id} href={`/hold/${slot.id}`}>
+          <div key={slot.id}>
             {inner}
-          </Link>
+            {canWaitlist && (slot.status === "RESERVED" || slot.status === "HOLDING") ? (
+              <form action={joinWaitlistAction} className="mt-1 flex justify-end">
+                <input type="hidden" name="slotId" value={slot.id} />
+                <input type="hidden" name="back" value={back} />
+                <button
+                  disabled={waiting}
+                  className="text-[10px] uppercase tracking-[0.2em] text-lime disabled:text-mute"
+                >
+                  {waiting ? "You're on the waitlist" : "Notify me if it frees"}
+                </button>
+              </form>
+            ) : null}
+          </div>
         );
       })}
     </div>

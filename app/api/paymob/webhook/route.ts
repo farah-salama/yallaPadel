@@ -23,17 +23,18 @@ export async function POST(req: NextRequest) {
   const success = String(obj.success) === "true" || obj.success === true;
 
   if (!success) {
-    if (bookingId) db.failPayment(bookingId);
+    if (bookingId) await db.failPayment(bookingId);
     return NextResponse.json({ ok: true });
   }
 
-  db.attachPayment(bookingId, {
+  const existing = await db.getBooking(bookingId);
+  await db.attachPayment(bookingId, {
     amountCents: Number(obj.amount_cents) || 0,
-    userId: db.getBooking(bookingId)?.userId || "unknown",
+    userId: existing?.userId || "unknown",
     paymobTxnId: txnId,
     status: "PENDING",
   });
-  const result = db.confirmPayment({ bookingId, txnId });
+  const result = await db.confirmPayment({ bookingId, txnId });
   if (result.ok) {
     const qr = await bookingQrDataUrl(result.booking.qrToken);
     await sendTicketEmail(result.booking, qr);

@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/utils";
 export default async function ProfilePage() {
   const user = await getSession();
   if (!user) redirect("/login?next=/profile");
-  const list = db.bookingsForUser(user.id);
+  const list = await db.bookingsForUser(user.id);
   const spent = list
     .filter((b) => b.status === "CONFIRMED" || b.status === "CHECKED_IN")
     .reduce((s, b) => s + b.depositCents, 0);
@@ -23,7 +23,15 @@ export default async function ProfilePage() {
           <Stat k="Player since" v={String(user.createdAt.getFullYear())} />
           <Stat k="Matches" v={String(list.filter((b) => b.status !== "CANCELLED" && b.status !== "PENDING_PAYMENT").length)} />
           <Stat k="Spent" v={formatMoney(spent)} />
-          <Stat k="No-shows" v={String(noshow)} />
+          <Stat k="Points" v={String(user.points)} />
+        </div>
+        <div className="panel mt-8 p-6">
+          <p className="label">Referral code</p>
+          <p className="mt-3 font-mono text-2xl text-lime">{user.referralCode}</p>
+          <p className="mt-2 text-sm text-mute">Share /login?ref={user.referralCode} — you both get 100 points after their first booking.</p>
+          <p className="mt-4 text-xs uppercase tracking-[0.2em] text-mute">
+            <a href="/waitlist" className="text-lime">My waitlist</a> · No-shows {noshow}
+          </p>
         </div>
       </div>
     </div>

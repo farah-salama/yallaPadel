@@ -9,7 +9,7 @@ import { formatDate, formatTime } from "@/lib/utils";
 export default async function BookingsPage() {
   const user = await getSession();
   if (!user) redirect("/login?next=/bookings");
-  const list = user.role === "ADMIN" ? db.allBookings() : db.bookingsForUser(user.id);
+  const list = user.role === "ADMIN" ? await db.allBookings() : await db.bookingsForUser(user.id);
   return (
     <div className="min-h-screen pb-24">
       <PlayerNav user={user} />

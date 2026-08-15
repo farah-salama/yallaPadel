@@ -1,4 +1,6 @@
--- Run in the Supabase SQL editor after `prisma db push`.
+-- Optional. Do not run this if the app uses Prisma with the database password
+-- (the postgres role bypasses RLS). Enable only after switching to Supabase Auth
+-- with the anon key from the browser.
 alter table "Profile" enable row level security;
 alter table "Court" enable row level security;
 alter table "TimeSlot" enable row level security;

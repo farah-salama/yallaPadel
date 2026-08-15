@@ -12,7 +12,7 @@ export default async function PaymentCompletePage({
   const user = await getSession();
   const merchant = q.merchant_order_id || q.special_reference;
   const success = q.success === "true";
-  const booking = merchant ? db.getBooking(merchant) : null;
+  const booking = merchant ? await db.getBooking(merchant) : null;
 
   return (
     <div className="min-h-screen">

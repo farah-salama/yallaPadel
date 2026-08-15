@@ -9,6 +9,7 @@ export function StatusChip({
 }) {
   const map: Record<string, string> = {
     AVAILABLE: "text-lime border-lime/30 bg-lime/10",
+    FLASH: "text-lime border-lime/40 bg-lime/15 shadow-glow-sm",
     FREE: "text-lime border-lime/30 bg-lime/10",
     HELD: "text-warn border-warn/30 bg-warn/10",
     HOLDING: "text-warn border-warn/30 bg-warn/10",

@@ -9,7 +9,7 @@ export default async function CheckInPage({
 }) {
   const q = await searchParams;
   const id = q.ok || q.already || q.invalid;
-  const booking = id ? db.getBooking(id) : null;
+  const booking = id ? await db.getBooking(id) : null;
   const kind = q.ok ? "ok" : q.already ? "already" : q.invalid ? "invalid" : q.missing ? "missing" : undefined;
   return (
     <CheckInClient

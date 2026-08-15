@@ -6,27 +6,34 @@ import type { Profile } from "./types";
 const COOKIE = "yp_session";
 
 export async function getSession(): Promise<Profile | null> {
-  const supabase = await createServerSupabase();
-  if (supabase && process.env.DEMO_MODE !== "true") {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      const profile = db.getProfile(data.user.id) ?? db.findByEmail(data.user.email ?? "");
-      if (profile) return profile;
-      return {
-        id: data.user.id,
-        email: data.user.email ?? "",
-        name: data.user.user_metadata?.name ?? "Player",
-        phone: data.user.phone ?? "+201000000000",
-        role: "PLAYER",
-        createdAt: new Date(),
-      };
+  try {
+    const supabase = await createServerSupabase();
+    if (supabase && process.env.DEMO_MODE !== "true") {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        const profile = (await db.getProfile(data.user.id)) ?? (await db.findByEmail(data.user.email ?? ""));
+        if (profile) return profile;
+        return {
+          id: data.user.id,
+          email: data.user.email ?? "",
+          name: data.user.user_metadata?.name ?? "Player",
+          phone: data.user.phone ?? "+201000000000",
+          role: "PLAYER",
+          createdAt: new Date(),
+          points: 0,
+          referralCode: "",
+          referredById: null,
+        };
+      }
     }
+  } catch {
+    /* cookie session below */
   }
 
   const jar = await cookies();
   const id = jar.get(COOKIE)?.value;
   if (!id) return null;
-  return db.getProfile(id);
+  return await db.getProfile(id);
 }
 
 export async function requireUser() {

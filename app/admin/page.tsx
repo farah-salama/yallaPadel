@@ -6,9 +6,9 @@ import { formatMoney, greeting } from "@/lib/utils";
 
 export default async function AdminHome() {
   const user = await getSession();
-  const stats = db.statsToday();
-  const courts = db.listCourts();
-  const slots = db.allSlotsOn(new Date());
+  const stats = await db.statsToday();
+  const courts = await db.listCourts();
+  const slots = await db.allSlotsOn(new Date());
   return (
     <div>
       <p className="label">{greeting()}, {user?.name.toUpperCase()}.</p>

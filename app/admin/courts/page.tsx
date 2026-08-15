@@ -4,7 +4,7 @@ import { CourtDiagram } from "@/components/court-diagram";
 import { formatMoney } from "@/lib/utils";
 
 export default async function AdminCourts() {
-  const courts = db.listCourts();
+  const courts = await db.listCourts();
   return (
     <div>
       <p className="label">Club</p>

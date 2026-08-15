@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { demoConfirmAction, startCheckoutAction } from "@/lib/actions";
 import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 import { paymobConfigured } from "@/lib/paymob";
+import { redeemCents } from "@/lib/pricing";
 
 export default async function PayPage({
   params,
@@ -18,10 +19,13 @@ export default async function PayPage({
   const q = await searchParams;
   const user = await getSession();
   if (!user) redirect("/login");
-  const booking = db.getBooking(id);
+  const booking = await db.getBooking(id);
   if (!booking) notFound();
   const live = paymobConfigured();
   const held = booking.slot.status === "HOLDING" && booking.slot.holdExpiresAt;
+  const profile = (await db.getProfile(user.id))!;
+  const off = redeemCents(profile.points, depositOfSafe(booking));
+  const after = Math.max(0, booking.depositCents - (booking.loyaltyRedeemCents || 0));
 
   return (
     <div className="min-h-screen pb-24">
@@ -34,9 +38,10 @@ export default async function PayPage({
           <Row k={booking.court.name} v={`${formatDate(booking.slot.start)}`} />
           <Row k="Time" v={`${formatTime(booking.slot.start)} — ${formatTime(booking.slot.end)}`} />
           <Row k="Court" v={formatMoney(booking.totalCents)} />
-          <Row k="Deposit due now (50%)" v={formatMoney(booking.depositCents)} />
+          <Row k="Deposit (50%)" v={formatMoney(booking.depositCents + (booking.loyaltyRedeemCents || 0))} />
+          {off > 0 ? <Row k={`Loyalty · ${profile.points} pts`} v={`− ${formatMoney(off)}`} /> : null}
           <Row k="Remaining at court" v={formatMoney(booking.remainingCents)} />
-          <Row k="Total" v={formatMoney(booking.totalCents)} strong />
+          <Row k="Due now" v={formatMoney(off ? booking.depositCents + (booking.loyaltyRedeemCents || 0) - off : after)} strong />
         </div>
         {held ? (
           <div className="mt-8">
@@ -44,18 +49,27 @@ export default async function PayPage({
             <p className="mt-2 text-center text-sm text-mute">Your slot is still held.</p>
           </div>
         ) : null}
-        <form action={live ? startCheckoutAction : demoConfirmAction} className="mt-8">
+        <form action={live ? startCheckoutAction : demoConfirmAction} className="mt-8 space-y-4">
           <input type="hidden" name="bookingId" value={booking.id} />
+          {off > 0 ? (
+            <label className="panel flex items-center justify-between p-4 text-sm">
+              <span>Redeem {profile.points} points ({formatMoney(off)} off, max 50%)</span>
+              <input type="checkbox" name="redeem" value="1" defaultChecked className="h-5 w-5 accent-[#C8FF00]" />
+            </label>
+          ) : (
+            <p className="text-center text-xs text-mute">Earn 1 point per EGP deposited. You have {profile.points} pts.</p>
+          )}
           <button className="w-full rounded-full bg-lime py-4 text-sm font-medium uppercase tracking-[0.22em] text-bg shadow-glow">
             {live ? "Pay & reserve →" : "Pay & reserve (demo) →"}
           </button>
         </form>
-        <p className="mt-4 text-center text-xs text-mute">
-          {live ? "You will be redirected to Paymob Unified Checkout." : "Demo mode — no live charge. Add Paymob keys to go live."}
-        </p>
       </div>
     </div>
   );
+}
+
+function depositOfSafe(booking: { depositCents: number; loyaltyRedeemCents: number }) {
+  return booking.depositCents + (booking.loyaltyRedeemCents || 0);
 }
 
 function Row({ k, v, strong }: { k: string; v: string; strong?: boolean }) {
