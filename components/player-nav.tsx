@@ -30,12 +30,14 @@ export function PlayerNav({ user }: { user: Profile | null }) {
               </form>
             </>
           ) : (
-            <Link href="/signup" className="text-xs uppercase tracking-[0.2em] text-mute">
-              Sign up
-            </Link>
-            <Link href="/login" className="rounded-full bg-lime px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-bg">
-              Sign in
-            </Link>
+            <>
+              <Link href="/signup" className="text-xs uppercase tracking-[0.2em] text-mute">
+                Sign up
+              </Link>
+              <Link href="/login" className="rounded-full bg-lime px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-bg">
+                Sign in
+              </Link>
+            </>
           )}
         </div>
       </div>
