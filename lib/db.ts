@@ -4,7 +4,9 @@ import { prismaStore } from "./prisma-store";
 import type { Booking, BookingView, Court, Profile, SlotStatus } from "./types";
 
 export function usingDemo() {
-  return process.env.DEMO_MODE === "true" || !process.env.DATABASE_URL?.trim() || !getPrisma();
+  if (process.env.DEMO_MODE === "true") return true;
+  if (process.env.DEMO_MODE === "false") return false;
+  return !process.env.DATABASE_URL?.trim() || !getPrisma();
 }
 
 function store() {
@@ -66,6 +68,8 @@ export const db = {
   setMorningPromo: async (active: boolean, percentOff?: number) =>
     (store() ?? wrap(demo)).setMorningPromo(active, percentOff),
   statsToday: async () => (store() ?? wrap(demo)).statsToday(),
+  ensureProfile: async (user: Profile) => (store() ?? wrap(demo)).ensureProfile(user),
+  ping: async () => (store() ?? wrap(demo)).ping(),
 };
 
 function wrap(d: typeof demo) {
@@ -116,6 +120,8 @@ function wrap(d: typeof demo) {
     listPromotions: async () => d.listPromotions(),
     setMorningPromo: async (active: boolean, percentOff?: number) => d.setMorningPromo(active, percentOff),
     statsToday: async () => d.statsToday(),
+    ensureProfile: async (user: Profile) => d.ensureProfile(user),
+    ping: async () => ({ ok: false as const, demo: true as const, users: d.listProfiles().length, bookings: d.allBookings().length }),
   };
 }
 

@@ -2,6 +2,10 @@ import crypto from "crypto";
 
 const BASE = process.env.PAYMOB_BASE_URL || "https://accept.paymob.com";
 
+function appUrl() {
+  return (process.env.APP_URL || "").replace(/\/$/, "");
+}
+
 function secret() {
   return process.env.PAYMOB_SECRET_KEY || "";
 }
@@ -58,8 +62,8 @@ export async function createIntention(input: IntentionInput) {
         last_name: input.customer.lastName,
         email: input.customer.email,
       },
-      notification_url: `${process.env.APP_URL}/api/paymob/webhook`,
-      redirection_url: `${process.env.APP_URL}/payment/complete`,
+      notification_url: `${appUrl()}/api/paymob/webhook`,
+      redirection_url: `${appUrl()}/payment/complete`,
     }),
   });
   if (!res.ok) {

@@ -9,6 +9,7 @@ export default async function AdminHome() {
   const stats = await db.statsToday();
   const courts = await db.listCourts();
   const slots = await db.allSlotsOn(new Date());
+  const recent = (await db.allBookings()).slice(0, 8);
   return (
     <div>
       <p className="label">{greeting()}, {user?.name.toUpperCase()}.</p>
@@ -25,6 +26,23 @@ export default async function AdminHome() {
       </div>
       <div className="mt-10">
         <DaySchedule courts={courts} slots={slots} />
+      </div>
+      <div className="mt-10">
+        <p className="label mb-4">Latest bookings</p>
+        {recent.length ? (
+          <div className="space-y-2">
+            {recent.map((b) => (
+              <a key={b.id} href={`/admin/bookings/${b.id}`} className="panel flex items-center justify-between p-4">
+                <div>
+                  <p className="font-display text-xl">{b.court.name} · {b.user.name}</p>
+                  <p className="font-mono text-xs text-mute">{b.code} · {b.status}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="text-mute">No bookings in the database yet.</p>
+        )}
       </div>
     </div>
   );

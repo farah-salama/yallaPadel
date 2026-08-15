@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-/** Pooler user is postgres.PROJECT — Prisma/pg otherwise authenticates as plain `postgres`. */
+/** Keep `postgres%2Eproject` encoded. `new URL().toString()` decodes it and Prisma then auths as `postgres`. */
 export function prismaDatabaseUrl(raw = process.env.DATABASE_URL) {
   if (!raw?.trim()) return "";
   let url = raw.trim().replace(/^["']|["']$/g, "");
@@ -13,21 +13,12 @@ export function prismaDatabaseUrl(raw = process.env.DATABASE_URL) {
   if (!/[?&]sslmode=/i.test(url)) {
     url += `${url.includes("?") ? "&" : "?"}sslmode=require`;
   }
-  return url;
+  return url.replace(/[?&]pgbouncer=true/gi, "").replace(/\?&/g, "?").replace(/[?&]$/g, "");
 }
 
-/** Session pooler (DIRECT_URL, port 5432). Transaction pooler + pgbouncer drops holds before /book loads. */
+/** Session pooler (DIRECT_URL, port 5432) for reads/writes. */
 export function prismaRuntimeUrl() {
-  const raw = process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim() || "";
-  const url = prismaDatabaseUrl(raw);
-  if (!url) return "";
-  try {
-    const parsed = new URL(url);
-    parsed.searchParams.delete("pgbouncer");
-    return parsed.toString();
-  } catch {
-    return url.replace(/[?&]pgbouncer=true/gi, "").replace(/\?&/, "?").replace(/[?&]$/, "");
-  }
+  return prismaDatabaseUrl(process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim() || "");
 }
 
 export function getPrisma() {

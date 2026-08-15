@@ -22,6 +22,11 @@ export default async function SignupPage({
         <h1 className="mt-4 font-display text-5xl">SIGN UP.</h1>
         <p className="mt-3 text-mute">Create an account to hold a slot and pay the deposit.</p>
         {q.error === "taken" ? <p className="mt-4 text-sm text-danger">Email already used.</p> : null}
+        {q.error === "db" ? (
+          <p className="mt-4 text-sm text-danger">
+            Couldn&apos;t save your account to the database. Check Admin → Settings (Supabase must be connected).
+          </p>
+        ) : null}
         <form action={registerAction} className="mt-10 space-y-4">
           <input type="hidden" name="next" value={next} />
           <AuthField name="name" label="Name" />

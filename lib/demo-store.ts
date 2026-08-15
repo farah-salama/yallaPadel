@@ -860,4 +860,20 @@ export const demo = {
     const occupancy = daySlots.length ? Math.round((reserved / daySlots.length) * 100) : 0;
     return { bookings: active.length, revenue, occupancy, noShows };
   },
+  ensureProfile(user: Profile) {
+    const store = db();
+    const existing =
+      store.profiles.find((p) => p.id === user.id) ||
+      store.profiles.find((p) => p.email.toLowerCase() === user.email.toLowerCase());
+    if (existing) return strip(existing);
+    const created: Profile = {
+      ...user,
+      password: user.password || "padel123",
+      referralCode: user.referralCode || `YALLA-${id("").slice(0, 4).toUpperCase()}`,
+      referredById: user.referredById ?? null,
+      points: user.points ?? 0,
+    };
+    store.profiles.push(created);
+    return strip(created);
+  },
 };

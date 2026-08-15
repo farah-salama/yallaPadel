@@ -19,7 +19,12 @@ export async function POST(req: NextRequest) {
   if (seen.has(txnId)) return NextResponse.json({ ok: true, dup: true });
   seen.add(txnId);
 
-  const bookingId = String(obj.order?.merchant_order_id || obj.merchant_order_id || "");
+  const bookingId = String(
+    obj.order?.merchant_order_id ||
+      obj.merchant_order_id ||
+      obj.special_reference ||
+      "",
+  );
   const success = String(obj.success) === "true" || obj.success === true;
 
   if (!success) {
@@ -27,10 +32,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const existing = await db.getBooking(bookingId);
+  const existing = bookingId ? await db.getBooking(bookingId) : null;
+  if (!existing) return NextResponse.json({ ok: false, error: "booking" }, { status: 404 });
   await db.attachPayment(bookingId, {
     amountCents: Number(obj.amount_cents) || 0,
-    userId: existing?.userId || "unknown",
+    userId: existing.userId,
     paymobTxnId: txnId,
     status: "PENDING",
   });

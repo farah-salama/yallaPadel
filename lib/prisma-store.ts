@@ -288,31 +288,50 @@ async function addPoints(userId: string, delta: number, reason: string, bookingI
 
 async function ensureClub() {
   const count = await prisma().court.count();
-  if (count > 0) return;
-  await prisma().court.createMany({
-    skipDuplicates: true,
-    data: [
-      {
-        id: "court-01",
-        slug: "court-01",
-        name: "COURT 01",
-        type: "Premium Glass Court",
-        location: "Sheikh Zayed, Cairo",
-        description: "Panoramic glass, tournament lights.",
-        peakPriceCents: 50000,
-        offPeakPriceCents: 35000,
-      },
-      {
-        id: "court-02",
-        slug: "court-02",
-        name: "COURT 02",
-        type: "Night Court",
-        location: "Sheikh Zayed, Cairo",
-        description: "Fast surface, LED canopy.",
-        peakPriceCents: 45000,
-        offPeakPriceCents: 30000,
-      },
-    ],
+  if (count === 0) {
+    await prisma().court.createMany({
+      skipDuplicates: true,
+      data: [
+        {
+          id: "court-01",
+          slug: "court-01",
+          name: "COURT 01",
+          type: "Premium Glass Court",
+          location: "Sheikh Zayed, Cairo",
+          description: "Panoramic glass, tournament lights.",
+          peakPriceCents: 50000,
+          offPeakPriceCents: 35000,
+        },
+        {
+          id: "court-02",
+          slug: "court-02",
+          name: "COURT 02",
+          type: "Night Court",
+          location: "Sheikh Zayed, Cairo",
+          description: "Fast surface, LED canopy.",
+          peakPriceCents: 45000,
+          offPeakPriceCents: 30000,
+        },
+      ],
+    });
+  }
+  await prisma().profile.upsert({
+    where: { email: "mostafa@yallapadel.club" },
+    update: { role: "ADMIN" },
+    create: {
+      id: "user-mostafa",
+      email: "mostafa@yallapadel.club",
+      name: "Mostafa",
+      phone: "+201001112233",
+      password: "padel123",
+      role: "ADMIN",
+      referralCode: "YALLA-MOST",
+    },
+  });
+  await prisma().clubSettings.upsert({
+    where: { id: "default" },
+    update: {},
+    create: { id: "default", name: "YallaPadel", location: "Sheikh Zayed, Cairo" },
   });
 }
 
@@ -355,6 +374,7 @@ async function notifyWaitlist(slotId: string) {
 
 export const prismaStore = {
   async listProfiles() {
+    await ensureClub();
     const rows = await prisma().profile.findMany({ orderBy: { createdAt: "asc" } });
     return rows.map((r) => strip(asProfile(r)));
   },
@@ -393,6 +413,41 @@ export const prismaStore = {
       },
     });
     return asProfile(created);
+  },
+  async ensureProfile(user: Profile) {
+    const existing =
+      (await prisma().profile.findUnique({ where: { id: user.id } })) ||
+      (await prisma().profile.findFirst({
+        where: { email: { equals: user.email, mode: "insensitive" } },
+      }));
+    if (existing) return strip(asProfile(existing));
+    const created = await prisma().profile.create({
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone || "+201000000000",
+        password: user.password || null,
+        role: user.role === "ADMIN" ? "ADMIN" : "PLAYER",
+        points: user.points ?? 0,
+        referralCode: user.referralCode || `YALLA-${id("").slice(0, 4).toUpperCase()}`,
+        referredById: user.referredById,
+      },
+    });
+    return strip(asProfile(created));
+  },
+  async ping() {
+    try {
+      await ensureClub();
+      const [users, bookings] = await Promise.all([
+        prisma().profile.count(),
+        prisma().booking.count(),
+      ]);
+      return { ok: true as const, demo: false as const, users, bookings };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Database error";
+      return { ok: false as const, demo: false as const, users: 0, bookings: 0, error: message.slice(0, 180) };
+    }
   },
   async listCourts() {
     await ensureClub();

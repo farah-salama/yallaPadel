@@ -3,6 +3,7 @@ import { paymobConfigured } from "@/lib/paymob";
 
 export default async function SettingsPage() {
   const demo = db.usingDemo();
+  const ping = await db.ping();
   return (
     <div className="max-w-xl">
       <p className="label">Club</p>
@@ -12,7 +13,16 @@ export default async function SettingsPage() {
         <Row k="Deposit" v="50%" />
         <Row k="Hold" v="5 minutes" />
         <Row k="Cancel" v=">6h 100% · 2–6h 50% · <2h 0%" />
-        <Row k="Database" v={demo ? "Not connected — add DATABASE_URL + DIRECT_URL from Supabase" : "Supabase Postgres"} />
+        <Row
+          k="Database"
+          v={
+            demo
+              ? "Demo memory (not Supabase) — set DATABASE_URL + DIRECT_URL + DEMO_MODE=false on Vercel"
+              : ping.ok
+                ? `Supabase · ${ping.users} players · ${ping.bookings} bookings`
+                : `Supabase error — ${"error" in ping && ping.error ? ping.error : "check DATABASE_URL"}`
+          }
+        />
         <Row k="Paymob" v={paymobConfigured() ? "Configured" : "Demo checkout"} />
       </div>
     </div>
@@ -21,8 +31,8 @@ export default async function SettingsPage() {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between py-3">
-      <span className="text-mute">{k}</span>
+    <div className="flex justify-between gap-4 py-3">
+      <span className="shrink-0 text-mute">{k}</span>
       <span className="text-right">{v}</span>
     </div>
   );

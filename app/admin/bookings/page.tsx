@@ -10,7 +10,8 @@ export default async function AdminBookings() {
       <p className="label">Ops</p>
       <h1 className="mt-3 font-display text-5xl">BOOKINGS.</h1>
       <div className="mt-8 space-y-2">
-        {list.map((b) => (
+      {list.length ? (
+        list.map((b) => (
           <Link key={b.id} href={`/admin/bookings/${b.id}`} className="panel flex items-center justify-between p-4">
             <div>
               <p className="font-display text-xl">
@@ -22,7 +23,10 @@ export default async function AdminBookings() {
             </div>
             <StatusChip status={b.status} />
           </Link>
-        ))}
+        ))
+      ) : (
+        <p className="mt-8 text-mute">No bookings stored yet. If players are booking, check Settings → Database.</p>
+      )}
       </div>
     </div>
   );
