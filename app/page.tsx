@@ -1,10 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PlayerNav } from "@/components/player-nav";
 import { CourtDiagram } from "@/components/court-diagram";
 import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 export default async function HomePage() {
   const user = await getSession();
+  const hero = await db.getCourt("court-01");
   return (
     <div className="relative min-h-screen overflow-hidden">
       <PlayerNav user={user} />
@@ -37,10 +40,26 @@ export default async function HomePage() {
         </div>
         <div className="relative">
           <div className="absolute -inset-8 rounded-full bg-lime/5 blur-3xl" />
-          <div className="panel relative p-8">
-            <CourtDiagram accent className="h-64" />
+          <div className="panel relative overflow-hidden">
+            {hero?.imageUrl ? (
+              <>
+                <Image
+                  src={hero.imageUrl}
+                  alt={hero.name}
+                  width={1280}
+                  height={720}
+                  priority
+                  className="h-80 w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-bg via-bg/40 to-transparent" />
+              </>
+            ) : (
+              <div className="p-8">
+                <CourtDiagram accent className="h-64" />
+              </div>
+            )}
             <div className="pointer-events-none absolute left-8 top-10 rounded-full border border-lime/30 bg-bg/80 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-lime">
-              Court 01
+              {hero?.name ?? "Court 01"}
             </div>
             <div className="pointer-events-none absolute right-10 top-24 rounded-full border border-white/10 bg-bg/80 px-4 py-2 font-mono text-xs">
               20:00
