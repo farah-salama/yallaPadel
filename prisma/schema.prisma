@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+enum CourtStatus {
+  ACTIVE
+  MAINTENANCE
+}
+
+enum SlotStatus {
+  FREE
+  HOLDING
+  RESERVED
+  MAINTENANCE
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  CHECKED_IN
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  VOIDED
+  PROCESSING
+}
+
+enum RefundStatus {
+  NONE
+  PROCESSING
+  REFUNDED
+  FAILED
+}
+
+model Profile {
+  id        String     @id
+  email     String     @unique
+  name      String
+  phone     String     @default("+201000000000")
+  role      Role       @default(PLAYER)
+  createdAt DateTime   @default(now())
+  bookings  Booking[]
+  payments  Payment[]
+}
+
+model Court {
+  id                String       @id @default(cuid())
+  slug              String       @unique
+  name              String
+  type              String
+  location          String
+  description       String       @default("")
+  imageUrl          String?
+  peakPriceCents    Int
+  offPeakPriceCents Int
+  offPeakEnd        String       @default("12:00")
+  openingTime       String       @default("07:00")
+  closingTime       String       @default("23:00")
+  status            CourtStatus  @default(ACTIVE)
+  slots             TimeSlot[]
+  bookings          Booking[]
+}
+
+model TimeSlot {
+  id            String     @id @default(cuid())
+  courtId       String
+  court         Court      @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  start         DateTime
+  end           DateTime
+  status        SlotStatus @default(FREE)
+  holdExpiresAt DateTime?
+  booking       Booking?
+  createdAt     DateTime   @default(now())
+
+  @@unique([courtId, start])
+  @@index([start, status])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  userId        String
+  user          Profile       @relation(fields: [userId], references: [id])
+  courtId       String
+  court         Court         @relation(fields: [courtId], references: [id])
+  slotId        String        @unique
+  slot          TimeSlot      @relation(fields: [slotId], references: [id])
+  status        BookingStatus @default(PENDING_PAYMENT)
+  depositCents  Int
+  remainingCents Int
+  totalCents    Int
+  playerNames   String[]
+  qrToken       String        @unique
+  redeemedAt    DateTime?
+  cancelledAt   DateTime?
+  refundStatus  RefundStatus  @default(NONE)
+  refundCents   Int           @default(0)
+  createdAt     DateTime      @default(now())
+  payments      Payment[]
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  bookingId          String
+  booking            Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId             String
+  user               Profile       @relation(fields: [userId], references: [id])
+  provider           String        @default("paymob")
+  amountCents        Int
+  status             PaymentStatus @default(PENDING)
+  paymobTxnId        String?       @unique
+  paymobIntentionId  String?
+  clientSecret       String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model ClubSettings {
+  id             String @id @default("default")
+  name           String @default("YallaPadel")
+  location       String @default("Sheikh Zayed, Cairo")
+  depositPercent Int    @default(50)
+  holdMinutes    Int    @default(5)
+}

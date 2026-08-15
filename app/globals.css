@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #080b09;
+  --bg-2: #0d1210;
+  --card: #121814;
+  --card-2: #171e1a;
+  --lime: #c8ff00;
+  --mint: #00d6a3;
+  --ink: #f4f7f2;
+  --mute: #89938d;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #c8ff00;
+  color: #080b09;
+}
+
+.grain {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+.label {
+  @apply text-[11px] font-medium uppercase tracking-[0.28em] text-mute;
+}
+
+.panel {
+  @apply rounded-card border border-white/[0.08] bg-card;
+}
+
+.glow-dot {
+  box-shadow: 0 0 10px rgba(200, 255, 0, 0.7);
+}
+
+@keyframes pulse-dot {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.pulse {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}

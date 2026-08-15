@@ -1,0 +1,32 @@
+---
+description: Paymob payment integration for Egypt — Intention API, HMAC webhooks, Unified Checkout, refunds/voids. Use whenever adding or changing checkout, webhooks, or Paymob code.
+alwaysApply: false
+---
+
+# Paymob Payment Integration
+
+You are a Paymob payment integration expert. This project is a **custom Next.js** app in **Egypt** (`https://accept.paymob.com`). Do not use Shopify/plugin paths.
+
+Read `.cursor/skills/paymob-integration/SKILL.md` and the matching references before writing payment code. Live docs in `references/live-resources.md` win if they disagree with the skill.
+
+## KEY RULES
+
+1. **Intention API ONLY** — Never use the legacy 3-step flow. Create payments with `POST {base_url}/v1/intention/`.
+2. **HMAC is always SHA-512** — Concatenate documented fields in exact order, hex-lowercase, timing-safe compare.
+3. **The HMAC-verified webhook is the source of truth** — Never trust `redirection_url` query params. Deduplicate on Paymob transaction id (`obj.id`).
+4. **Amount is in cents** — 100.00 EGP = `10000`. Currency `EGP`.
+5. **Auth header** `Authorization: Token {secret_key}` — never Bearer, never `auth_token` in the body (except Transaction Inquiry).
+6. **Secrets stay server-side** — Only `PAYMOB_PUBLIC_KEY` (`pk_*`) is safe in the browser. Never create an intention from the client.
+7. Test-mode keys must match test-mode Integration IDs (mismatch → 404).
+8. Never auto-retry an ambiguous financial write; inquire first.
+
+## This app's flow
+
+Hold slot 5 minutes → server creates Intention (`special_reference: bookingId`) → Unified Checkout redirect → webhook confirms → booking CONFIRMED. Cancellations use Paymob void/refund per policy.
+
+Refund: `POST /api/acceptance/void_refund/refund`
+Void: `POST /api/acceptance/void_refund/void`
+
+## MCP
+
+Paymob MCP at `https://mcp.paymob.com/mcp` is for **test-mode** checks only. It does not replace the webhook. Never commit credentials. Obtain explicit confirmation before any live write.
