@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PlayerNav } from "@/components/player-nav";
 import { CourtDiagram } from "@/components/court-diagram";
@@ -34,9 +35,21 @@ export default async function CourtsPage({
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           {cards.map(({ court, eveningFree }) => (
               <article key={court.id} className="panel overflow-hidden">
-                <div className="bg-bg-2 p-6">
-                  <CourtDiagram accent className="h-40" />
-                </div>
+                {court.imageUrl ? (
+                  <div className="relative h-56 w-full bg-bg-2">
+                    <Image
+                      src={court.imageUrl}
+                      alt={court.name}
+                      fill
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-bg-2 p-6">
+                    <CourtDiagram accent className="h-40" />
+                  </div>
+                )}
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>

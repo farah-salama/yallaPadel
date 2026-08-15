@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlayerNav } from "@/components/player-nav";
@@ -34,6 +35,18 @@ export default async function CourtSlotsPage({
     <div className="min-h-screen pb-24">
       <PlayerNav user={user} />
       <div className="mx-auto max-w-3xl px-5 py-10">
+        {court.imageUrl ? (
+          <div className="panel relative mb-8 h-64 w-full overflow-hidden">
+            <Image
+              src={court.imageUrl}
+              alt={court.name}
+              fill
+              sizes="(min-width: 768px) 768px, 100vw"
+              priority
+              className="object-cover"
+            />
+          </div>
+        ) : null}
         <p className="label">{court.location}</p>
         <h1 className="mt-3 font-display text-5xl">{court.name}</h1>
         <p className="mt-2 text-mute">{court.type} · peak {court.peakPriceCents / 100} EGP · morning {court.offPeakPriceCents / 100} EGP</p>

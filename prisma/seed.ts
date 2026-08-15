@@ -106,7 +106,7 @@ async function main() {
 
   const c1 = await prisma.court.upsert({
     where: { slug: "court-01" },
-    update: {},
+    update: { imageUrl: "/courts/court-01.jpg" },
     create: {
       id: "court-01",
       slug: "court-01",
@@ -114,13 +114,14 @@ async function main() {
       type: "Premium Glass Court",
       location: "Sheikh Zayed, Cairo",
       description: "Panoramic glass, tournament lights.",
+      imageUrl: "/courts/court-01.jpg",
       peakPriceCents: 50000,
       offPeakPriceCents: 35000,
     },
   });
   const c2 = await prisma.court.upsert({
     where: { slug: "court-02" },
-    update: {},
+    update: { imageUrl: "/courts/court-02.jpg" },
     create: {
       id: "court-02",
       slug: "court-02",
@@ -128,6 +129,7 @@ async function main() {
       type: "Night Court",
       location: "Sheikh Zayed, Cairo",
       description: "Fast surface, LED canopy.",
+      imageUrl: "/courts/court-02.jpg",
       peakPriceCents: 45000,
       offPeakPriceCents: 30000,
     },
