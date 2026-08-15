@@ -78,7 +78,7 @@ export function SlotTimeline({
         );
         if (available) {
           return (
-            <Link key={slot.id} href={`/hold/${slot.id}`}>
+            <Link key={slot.id} href={`/hold/${encodeURIComponent(slot.id)}`}>
               {inner}
             </Link>
           );

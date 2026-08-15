@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PlayerNav } from "@/components/player-nav";
 import { BookingPass } from "@/components/booking-pass";
 import { PlayerSlots } from "@/components/player-slots";
@@ -21,7 +21,7 @@ export default async function BookingDetailPage({
   const user = await getSession();
   if (!user) redirect("/login");
   const booking = await db.getBooking(id);
-  if (!booking) notFound();
+  if (!booking) redirect("/bookings");
   if (booking.userId !== user.id && user.role !== "ADMIN") redirect("/bookings");
   const qr = await bookingQrDataUrl(booking.qrToken);
   const pct = refundPercent(booking.slot.start);

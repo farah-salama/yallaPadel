@@ -33,7 +33,11 @@ export async function getSession(): Promise<Profile | null> {
   const jar = await cookies();
   const id = jar.get(COOKIE)?.value;
   if (!id) return null;
-  return await db.getProfile(id);
+  try {
+    return await db.getProfile(id);
+  } catch {
+    return null;
+  }
 }
 
 export async function requireUser() {

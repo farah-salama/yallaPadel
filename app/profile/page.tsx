@@ -28,7 +28,7 @@ export default async function ProfilePage() {
         <div className="panel mt-8 p-6">
           <p className="label">Referral code</p>
           <p className="mt-3 font-mono text-2xl text-lime">{user.referralCode}</p>
-          <p className="mt-2 text-sm text-mute">Share /login?ref={user.referralCode} — you both get 100 points after their first booking.</p>
+          <p className="mt-2 text-sm text-mute">Share /signup?ref={user.referralCode} — you both get 100 points after their first booking.</p>
           <p className="mt-4 text-xs uppercase tracking-[0.2em] text-mute">
             <a href="/waitlist" className="text-lime">My waitlist</a> · No-shows {noshow}
           </p>

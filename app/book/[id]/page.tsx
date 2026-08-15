@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PlayerNav } from "@/components/player-nav";
 import { HoldCountdown } from "@/components/hold-countdown";
 import { getSession } from "@/lib/auth";
@@ -11,7 +11,7 @@ export default async function BookHoldPage({ params }: { params: Promise<{ id: s
   const user = await getSession();
   if (!user) redirect("/login");
   const booking = await db.getBooking(id);
-  if (!booking) notFound();
+  if (!booking) redirect("/courts?error=booking");
   if (booking.userId !== user.id && user.role !== "ADMIN") redirect("/bookings");
   const slot = booking.slot;
   const expired = slot.status !== "HOLDING" && booking.status === "PENDING_PAYMENT";

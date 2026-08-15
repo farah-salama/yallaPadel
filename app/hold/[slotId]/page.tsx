@@ -7,9 +7,10 @@ import { holdAndPayAction } from "@/lib/actions";
 import { formatDate, formatMoney, formatTime } from "@/lib/utils";
 
 export default async function HoldPage({ params }: { params: Promise<{ slotId: string }> }) {
-  const { slotId } = await params;
+  const raw = await params;
+  const slotId = decodeURIComponent(raw.slotId);
   const user = await getSession();
-  if (!user) redirect(`/login?next=/hold/${slotId}`);
+  if (!user) redirect(`/login?next=/hold/${encodeURIComponent(slotId)}`);
   const slot = await db.getSlot(slotId);
   if (!slot) redirect("/courts");
   const court = await db.getCourt(slot.courtId);

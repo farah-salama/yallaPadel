@@ -30,7 +30,9 @@ export async function registerAction(formData: FormData) {
     const user = await db.register({ email, password, name, ref: ref || undefined });
     await setDemoSession(user.id);
   } catch {
-    redirect(`/login?error=taken&next=${encodeURIComponent(next)}`);
+    const params = new URLSearchParams({ error: "taken", next });
+    if (ref) params.set("ref", ref);
+    redirect(`/signup?${params.toString()}`);
   }
   redirect(next || "/courts");
 }
@@ -46,7 +48,12 @@ export async function holdAndPayAction(formData: FormData) {
   const slotId = String(formData.get("slotId"));
   const names = [1, 2, 3, 4].map((n) => String(formData.get(`p${n}`) || "").trim());
   if (!names[0]) names[0] = user.name;
-  const { booking } = await db.holdSlot(slotId, user.id, names);
+  let booking;
+  try {
+    ({ booking } = await db.holdSlot(slotId, user.id, names));
+  } catch {
+    redirect("/courts?error=hold");
+  }
   redirect(`/book/${booking.id}`);
 }
 

@@ -6,8 +6,13 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hourInCairo, formatMoney } from "@/lib/utils";
 
-export default async function CourtsPage() {
+export default async function CourtsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const user = await getSession();
+  const q = await searchParams;
   const courts = await db.listCourts();
   const today = new Date();
   const cards = await Promise.all(
@@ -23,6 +28,9 @@ export default async function CourtsPage() {
       <div className="mx-auto max-w-6xl px-5 py-12">
         <p className="label">Sheikh Zayed</p>
         <h1 className="mt-3 font-display text-5xl sm:text-7xl">COURTS ARE OPEN.</h1>
+        {q.error === "hold" || q.error === "booking" ? (
+          <p className="mt-4 text-sm text-danger">That slot didn&apos;t lock. Pick a time again.</p>
+        ) : null}
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           {cards.map(({ court, eveningFree }) => (
               <article key={court.id} className="panel overflow-hidden">

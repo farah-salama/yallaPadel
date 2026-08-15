@@ -286,6 +286,36 @@ async function addPoints(userId: string, delta: number, reason: string, bookingI
   }
 }
 
+async function ensureClub() {
+  const count = await prisma().court.count();
+  if (count > 0) return;
+  await prisma().court.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: "court-01",
+        slug: "court-01",
+        name: "COURT 01",
+        type: "Premium Glass Court",
+        location: "Sheikh Zayed, Cairo",
+        description: "Panoramic glass, tournament lights.",
+        peakPriceCents: 50000,
+        offPeakPriceCents: 35000,
+      },
+      {
+        id: "court-02",
+        slug: "court-02",
+        name: "COURT 02",
+        type: "Night Court",
+        location: "Sheikh Zayed, Cairo",
+        description: "Fast surface, LED canopy.",
+        peakPriceCents: 45000,
+        offPeakPriceCents: 30000,
+      },
+    ],
+  });
+}
+
 async function ensureSlots(courtId: string, day: Date) {
   const { p, start, end } = dayBounds(day);
   const existing = await prisma().timeSlot.count({
@@ -365,10 +395,12 @@ export const prismaStore = {
     return asProfile(created);
   },
   async listCourts() {
+    await ensureClub();
     const rows = await prisma().court.findMany({ orderBy: { name: "asc" } });
     return rows.map(asCourt);
   },
   async getCourt(idOrSlug: string) {
+    await ensureClub();
     const row = await prisma().court.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
     });
@@ -426,63 +458,62 @@ export const prismaStore = {
   async holdSlot(slotId: string, userId: string, playerNames: string[]) {
     await this.expireHolds();
     const names = playerNames.filter(Boolean).slice(0, 4);
-    const result = await prisma().$transaction(async (tx) => {
-      const slotRow = await tx.timeSlot.findUnique({ where: { id: slotId }, include: { court: true } });
-      if (!slotRow) throw new Error("SLOT_MISSING");
-      if (slotRow.status === "MAINTENANCE") throw new Error("MAINTENANCE");
-      if (slotRow.status === "RESERVED") throw new Error("TAKEN");
-      if (slotRow.status === "HOLDING" && slotRow.holdExpiresAt && slotRow.holdExpiresAt.getTime() > Date.now()) {
-        const existing = await tx.booking.findFirst({
-          where: { slotId, status: "PENDING_PAYMENT" },
-        });
-        if (existing && existing.userId !== userId) throw new Error("HELD");
-      }
-      const slot = asSlot(slotRow);
-      const court = asCourt(slotRow.court);
-      const promos = (await tx.promotion.findMany()).map(asPromo);
-      const total = pricedSlot(court.peakPriceCents, court.offPeakPriceCents, slot, court.offPeakEnd, promos);
-      const deposit = depositOf(total);
-      const expiresAt = new Date(Date.now() + HOLD_MS);
-      await tx.timeSlot.update({
-        where: { id: slotId },
-        data: { status: "HOLDING", holdExpiresAt: expiresAt },
+    const profile = await prisma().profile.findUnique({ where: { id: userId } });
+    if (!profile) throw new Error("USER_MISSING");
+    const slotRow = await prisma().timeSlot.findUnique({ where: { id: slotId }, include: { court: true } });
+    if (!slotRow) throw new Error("SLOT_MISSING");
+    if (slotRow.status === "MAINTENANCE") throw new Error("MAINTENANCE");
+    if (slotRow.status === "RESERVED") throw new Error("TAKEN");
+    if (slotRow.status === "HOLDING" && slotRow.holdExpiresAt && slotRow.holdExpiresAt.getTime() > Date.now()) {
+      const existing = await prisma().booking.findFirst({
+        where: { slotId, status: "PENDING_PAYMENT" },
       });
-      let booking = await tx.booking.findFirst({
-        where: { slotId, status: "PENDING_PAYMENT", userId },
-      });
-      if (!booking) {
-        booking = await tx.booking.create({
-          data: {
-            code: bookingCode(),
-            userId,
-            courtId: court.id,
-            slotId: slot.id,
-            status: "PENDING_PAYMENT",
-            depositCents: deposit,
-            remainingCents: total - deposit,
-            totalCents: total,
-            loyaltyRedeemCents: 0,
-            playerNames: names,
-            qrToken: qrToken(),
-          },
-        });
-      } else {
-        booking = await tx.booking.update({
-          where: { id: booking.id },
-          data: { playerNames: names, depositCents: deposit, remainingCents: total - deposit, totalCents: total },
-        });
-      }
-      const flash = await tx.promotion.findFirst({
-        where: { kind: "FLASH", slotId: slot.id, active: true },
-      });
-      if (flash) {
-        await tx.promotion.update({ where: { id: flash.id }, data: { usageCount: { increment: 1 } } });
-      }
-      return { bookingId: booking.id, expiresAt };
+      if (existing && existing.userId !== userId) throw new Error("HELD");
+    }
+    const slot = asSlot(slotRow);
+    const court = asCourt(slotRow.court);
+    const promos = (await prisma().promotion.findMany()).map(asPromo);
+    const total = pricedSlot(court.peakPriceCents, court.offPeakPriceCents, slot, court.offPeakEnd, promos);
+    const deposit = depositOf(total);
+    const expiresAt = new Date(Date.now() + HOLD_MS);
+    await prisma().timeSlot.update({
+      where: { id: slotId },
+      data: { status: "HOLDING", holdExpiresAt: expiresAt },
     });
-    const booking = await view(result.bookingId);
-    if (!booking) throw new Error("MISSING");
-    return { booking, expiresAt: result.expiresAt };
+    let booking = await prisma().booking.findFirst({
+      where: { slotId, status: "PENDING_PAYMENT", userId },
+    });
+    if (!booking) {
+      booking = await prisma().booking.create({
+        data: {
+          code: bookingCode(),
+          userId,
+          courtId: court.id,
+          slotId: slot.id,
+          status: "PENDING_PAYMENT",
+          depositCents: deposit,
+          remainingCents: total - deposit,
+          totalCents: total,
+          loyaltyRedeemCents: 0,
+          playerNames: names,
+          qrToken: qrToken(),
+        },
+      });
+    } else {
+      booking = await prisma().booking.update({
+        where: { id: booking.id },
+        data: { playerNames: names, depositCents: deposit, remainingCents: total - deposit, totalCents: total },
+      });
+    }
+    const flash = await prisma().promotion.findFirst({
+      where: { kind: "FLASH", slotId: slot.id, active: true },
+    });
+    if (flash) {
+      await prisma().promotion.update({ where: { id: flash.id }, data: { usageCount: { increment: 1 } } });
+    }
+    const viewed = await view(booking.id);
+    if (!viewed) throw new Error("MISSING");
+    return { booking: viewed, expiresAt };
   },
   async applyLoyalty(bookingId: string, userId: string, usePoints: boolean) {
     const booking = await prisma().booking.findFirst({

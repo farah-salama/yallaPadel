@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PlayerNav } from "@/components/player-nav";
 import { HoldCountdown } from "@/components/hold-countdown";
 import { getSession } from "@/lib/auth";
@@ -20,7 +20,7 @@ export default async function PayPage({
   const user = await getSession();
   if (!user) redirect("/login");
   const booking = await db.getBooking(id);
-  if (!booking) notFound();
+  if (!booking) redirect("/courts?error=booking");
   const live = paymobConfigured();
   const held = booking.slot.status === "HOLDING" && booking.slot.holdExpiresAt;
   const profile = (await db.getProfile(user.id))!;

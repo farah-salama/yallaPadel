@@ -1,39 +1,41 @@
 import Link from "next/link";
-import { loginAction } from "@/lib/actions";
+import { registerAction } from "@/lib/actions";
 import { PlayerNav } from "@/components/player-nav";
 import { AuthField } from "@/components/auth-field";
 import { getSession } from "@/lib/auth";
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; ref?: string }>;
 }) {
   const user = await getSession();
   const q = await searchParams;
   const next = q.next || "/courts";
-  const signupHref = `/signup?next=${encodeURIComponent(next)}`;
+  const loginHref = `/login?next=${encodeURIComponent(next)}`;
 
   return (
     <div className="min-h-screen pb-20">
       <PlayerNav user={user} />
       <div className="mx-auto max-w-md px-5 py-16">
-        <p className="label">Access</p>
-        <h1 className="mt-4 font-display text-5xl">SIGN IN.</h1>
-        <p className="mt-3 text-mute">Use your YallaPadel email to lock a court.</p>
-        {q.error === "1" ? <p className="mt-4 text-sm text-danger">Wrong email or password.</p> : null}
-        <form action={loginAction} className="mt-10 space-y-4">
+        <p className="label">New player</p>
+        <h1 className="mt-4 font-display text-5xl">SIGN UP.</h1>
+        <p className="mt-3 text-mute">Create an account to hold a slot and pay the deposit.</p>
+        {q.error === "taken" ? <p className="mt-4 text-sm text-danger">Email already used.</p> : null}
+        <form action={registerAction} className="mt-10 space-y-4">
           <input type="hidden" name="next" value={next} />
+          <AuthField name="name" label="Name" />
           <AuthField name="email" label="Email" type="email" />
           <AuthField name="password" label="Password" type="password" />
+          <AuthField name="ref" label="Referral code" defaultValue={q.ref || ""} />
           <button className="w-full rounded-full bg-lime py-4 text-sm font-medium uppercase tracking-[0.22em] text-bg">
-            Enter →
+            Create account →
           </button>
         </form>
         <p className="mt-8 text-center text-sm text-mute">
-          New player?{" "}
-          <Link href={signupHref} className="text-lime">
-            Create an account
+          Already play here?{" "}
+          <Link href={loginHref} className="text-lime">
+            Sign in
           </Link>
         </p>
         <p className="mt-6 text-center text-xs text-mute">
