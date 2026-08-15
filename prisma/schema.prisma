@@ -111,7 +111,7 @@ model TimeSlot {
   end           DateTime
   status        SlotStatus      @default(FREE)
   holdExpiresAt DateTime?
-  booking       Booking?
+  bookings      Booking[]
   waitlist      WaitlistEntry[]
   createdAt     DateTime        @default(now())
 
@@ -126,7 +126,7 @@ model Booking {
   user               Profile       @relation(fields: [userId], references: [id])
   courtId            String
   court              Court         @relation(fields: [courtId], references: [id])
-  slotId             String        @unique
+  slotId             String
   slot               TimeSlot      @relation(fields: [slotId], references: [id])
   status             BookingStatus @default(PENDING_PAYMENT)
   depositCents       Int
@@ -143,6 +143,9 @@ model Booking {
   createdAt          DateTime      @default(now())
   payments           Payment[]
   joinRequests       JoinRequest[]
+
+  @@index([slotId, status])
+  @@index([userId, createdAt])
 }
 
 model Payment {

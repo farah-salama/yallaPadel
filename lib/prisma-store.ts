@@ -519,12 +519,21 @@ export const prismaStore = {
     if (!slotRow) throw new Error("SLOT_MISSING");
     if (slotRow.status === "MAINTENANCE") throw new Error("MAINTENANCE");
     if (slotRow.status === "RESERVED") throw new Error("TAKEN");
+    const live = await prisma().booking.findFirst({
+      where: { slotId, status: { in: ["CONFIRMED", "CHECKED_IN"] } },
+    });
+    if (live) throw new Error("TAKEN");
     if (slotRow.status === "HOLDING" && slotRow.holdExpiresAt && slotRow.holdExpiresAt.getTime() > Date.now()) {
       const existing = await prisma().booking.findFirst({
         where: { slotId, status: "PENDING_PAYMENT" },
       });
       if (existing && existing.userId !== userId) throw new Error("HELD");
     }
+    // A slot can hold many historical bookings; only this user's pending one may be reused.
+    await prisma().booking.updateMany({
+      where: { slotId, status: "PENDING_PAYMENT", userId: { not: userId } },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    });
     const slot = asSlot(slotRow);
     const court = asCourt(slotRow.court);
     const promos = (await prisma().promotion.findMany()).map(asPromo);
@@ -927,7 +936,12 @@ export const prismaStore = {
         emailedAt: existing.emailedAt,
       } satisfies WaitlistEntry;
     }
-    const row = await prisma().waitlistEntry.create({ data: { slotId, userId } });
+    // A previously notified entry still occupies the (slotId, userId) key, so re-arm it instead of inserting.
+    const row = await prisma().waitlistEntry.upsert({
+      where: { slotId_userId: { slotId, userId } },
+      create: { slotId, userId },
+      update: { notifiedAt: null, emailedAt: null, createdAt: new Date() },
+    });
     return {
       id: row.id,
       slotId: row.slotId,

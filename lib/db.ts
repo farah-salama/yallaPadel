@@ -3,10 +3,19 @@ import { getPrisma } from "./prisma";
 import { prismaStore } from "./prisma-store";
 import type { Booking, BookingView, Court, Profile, SlotStatus } from "./types";
 
+let warnedDemo = false;
+
 export function usingDemo() {
   if (process.env.DEMO_MODE === "true") return true;
   if (process.env.DEMO_MODE === "false") return false;
-  return !process.env.DATABASE_URL?.trim() || !getPrisma();
+  const demo = !process.env.DATABASE_URL?.trim() || !getPrisma();
+  if (demo && !warnedDemo) {
+    warnedDemo = true;
+    console.warn(
+      "[db] DATABASE_URL is not set - falling back to the in-memory demo store. Signups and bookings will NOT persist.",
+    );
+  }
+  return demo;
 }
 
 function store() {
